@@ -97,9 +97,7 @@ class FirebaseFileService extends AbstractFileService {
         return { key: fileName, url };
     }
     async delete(fileData: DeleteFileType): Promise<void> {
-        console.log("🚀 ~ FirebaseFileService ~ delete ~ fileData:", fileData);
         const file = this.bucket.file(fileData.fileKey);
-        await file.delete();
 
         await file.delete().catch((error: any) => {
             console.error(`Failed to delete file: ${error}`);
