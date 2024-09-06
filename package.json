@@ -1,6 +1,6 @@
 {
     "name": "medusa-firebase",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Firebase server file connector for Medusa",
     "main": "dist/index.js",
     "files": [
