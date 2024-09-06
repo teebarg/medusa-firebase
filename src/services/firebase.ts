@@ -21,6 +21,8 @@ class FirebaseFileService extends AbstractFileService {
     private bucket: any;
     private upload_dir: string;
     protected logger_: Logger;
+    protected publicPath = "uploads"
+    protected protectedPath = "protected-uploads"
 
     constructor({ logger }: any, options: FirebaseOptions) {
         // @ts-ignore
@@ -39,7 +41,8 @@ class FirebaseFileService extends AbstractFileService {
     }
 
     async upload(fileData: Express.Multer.File): Promise<FileServiceUploadResult> {
-        const fileName = `${this.upload_dir}/${path.basename(fileData.originalname)}`;
+        // const fileName = `${this.upload_dir}/${path.basename(fileData.originalname)}`;
+        const fileName = `${path.basename(fileData.originalname)}`;
         const file = this.bucket.file(fileName);
 
         // Use the `createReadStream` to upload the file
@@ -67,7 +70,8 @@ class FirebaseFileService extends AbstractFileService {
         return { key: fileName, url };
     }
     async uploadProtected(fileData: Express.Multer.File): Promise<FileServiceUploadResult> {
-        const fileName = `${this.upload_dir}/private/${path.basename(fileData.originalname)}`;
+        // const fileName = `${this.upload_dir}/private/${path.basename(fileData.originalname)}`;
+        const fileName = `private/${path.basename(fileData.originalname)}`;
         const file = this.bucket.file(fileName);
 
         const stream = createReadStream(fileData.path);
@@ -90,9 +94,10 @@ class FirebaseFileService extends AbstractFileService {
             expires: "03-09-2491",
         });
 
-        return { key: "up-protected-123", url };
+        return { key: fileName, url };
     }
     async delete(fileData: DeleteFileType): Promise<void> {
+        console.log("🚀 ~ FirebaseFileService ~ delete ~ fileData:", fileData);
         const file = this.bucket.file(fileData.fileKey);
         await file.delete();
 
@@ -102,12 +107,13 @@ class FirebaseFileService extends AbstractFileService {
         });
     }
     async getUploadStreamDescriptor(fileData: UploadStreamDescriptorType): Promise<FileServiceGetUploadStreamResult> {
-        const fileName = `${Date.now()}_${fileData.name}`;
+        console.log("🚀 ~ FirebaseFileService ~ getUploadStreamDescriptor ~ fileData:", fileData);
+        const fileName = `${fileData.name}.${fileData.ext}`;
         const file = this.bucket.file(fileName);
         const passThrough = new PassThrough();
         const writeStream = file.createWriteStream({
             metadata: {
-                contentType: fileData.contentType,
+                contentType: fileData.ext,
             },
         });
 
@@ -119,11 +125,13 @@ class FirebaseFileService extends AbstractFileService {
                 writeStream.on("finish", () => resolve({ url: fileName, key: fileName }));
                 writeStream.on("error", reject);
             }),
+            // url: `https://storage.googleapis.com/${this.bucket.name}/${this.upload_dir}/${fileName}`,
             url: `https://storage.googleapis.com/${this.bucket.name}/${fileName}`,
             fileKey: fileName,
         };
     }
     async getDownloadStream(fileData: GetUploadedFileType): Promise<NodeJS.ReadableStream> {
+        console.log("🚀 ~ FirebaseFileService ~ getDownloadStream ~ fileData:", fileData);
         const file = this.bucket.file(fileData.fileKey);
         const [exists] = await file.exists();
         if (!exists) {
@@ -141,6 +149,7 @@ class FirebaseFileService extends AbstractFileService {
         const [url] = await file.getSignedUrl({
             action: "read",
             expires: "03-09-2491",
+            responseDisposition: `attachment; filename="${fileData.fileKey}"`,
         });
         return url;
     }
